@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111827">
+  <title>Emoji Mixer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1020;
+      --panel: #141c2f;
+      --panel-2: #1b2740;
+      --text: #edf2ff;
+      --muted: #9ba9c5;
+      --accent: #8b9cff;
+      --accent-2: #b6c0ff;
+      --border: #2b3855;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 16px;
+      background: radial-gradient(circle at 15% 0%, #202c50 0, transparent 38%), var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .wrap { width: min(900px, 100%); margin: 0 auto; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(28px, 5vw, 40px); letter-spacing: -1.2px; }
+    .subtitle { margin: 0; color: var(--muted); line-height: 1.6; }
+    .panel {
+      background: rgba(20, 28, 47, .94);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 20px;
+      box-shadow: 0 18px 50px rgba(0,0,0,.22);
+      margin-bottom: 16px;
+    }
+    label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 650; }
+    textarea {
+      display: block; width: 100%; min-height: 190px; resize: vertical;
+      padding: 15px; border: 1px solid var(--border); border-radius: 12px;
+      outline: none; background: #0d1528; color: var(--text);
+      font: inherit; line-height: 1.7;
+    }
+    textarea:focus, input:focus {
+      border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,156,255,.14);
+    }
+    .settings {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px; margin-top: 18px;
+    }
+    .setting {
+      padding: 13px; border: 1px solid var(--border); border-radius: 12px;
+      background: #101a2e;
+    }
+    .setting label { color: var(--muted); }
+    input[type="number"] {
+      width: 100%; padding: 10px 11px; border-radius: 9px;
+      border: 1px solid var(--border); background: #0b1426; color: var(--text);
+      font: inherit;
+    }
+    .hint { color: var(--muted); font-size: 12px; margin: 7px 0 0; line-height: 1.45; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    button {
+      border: 1px solid transparent; border-radius: 10px; padding: 11px 16px;
+      color: #10162a; background: var(--accent-2); font: inherit; font-weight: 750;
+      cursor: pointer; transition: transform .12s ease, filter .12s ease;
+    }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    button.secondary {
+      background: var(--panel-2); border-color: var(--border); color: var(--text);
+    }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .output-head {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 10px;
+    }
+    .output-head label { margin: 0; }
+    .output {
+      min-height: 150px; white-space: pre-wrap; overflow-wrap: anywhere;
+      padding: 16px; border: 1px solid var(--border); border-radius: 12px;
+      background: #0d1528; line-height: 1.9; font-size: 17px;
+    }
+    .stats {
+      display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px;
+      color: var(--muted); font-size: 13px;
+    }
+    .status { min-height: 20px; margin: 10px 0 0; color: var(--accent-2); font-size: 13px; }
+    footer { color: var(--muted); font-size: 12px; line-height: 1.6; text-align: center; margin-top: 20px; }
+    @media (max-width: 620px) {
+      body { padding: 22px 12px; }
+      .panel { padding: 15px; }
+      .settings { grid-template-columns: 1fr; gap: 10px; }
+      .output-head { align-items: flex-start; flex-direction: column; }
+      .actions button { flex: 1 1 calc(50% - 10px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Emoji Mixer</h1>
+      <p class="subtitle">텍스트 사이사이에 무작위 이모지를 넣어 보세요.</p>
+    </header>
+
+    <section class="panel">
+      <label for="sourceText">원본 텍스트</label>
+      <textarea id="sourceText" placeholder="이곳에 텍스트를 입력하세요."></textarea>
+
+      <div class="settings">
+        <div class="setting">
+          <label for="minChunk">최소 분할 글자 수</label>
+          <input id="minChunk" type="number" min="1" max="100" value="1">
+          <p class="hint">각 텍스트 구간의 최소 길이</p>
+        </div>
+        <div class="setting">
+          <label for="maxChunk">최대 분할 글자 수</label>
+          <input id="maxChunk" type="number" min="1" max="100" value="10">
+          <p class="hint">각 텍스트 구간의 최대 길이</p>
+        </div>
+        <div class="setting">
+          <label for="maxBurst">구간당 최대 이모지 수</label>
+          <input id="maxBurst" type="number" min="1" max="10" value="3">
+          <p class="hint">구간 사이에 들어갈 이모지의 최대 개수</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="generateBtn" type="button">변환하기</button>
+        <button id="remixBtn" class="secondary" type="button">다시 섞기</button>
+        <button id="clearBtn" class="secondary" type="button">초기화</button>
+      </div>
+      <p id="inputStatus" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel">
+      <div class="output-head">
+        <label for="result">변환 결과</label>
+        <button id="copyBtn" class="secondary" type="button">결과 복사</button>
+      </div>
+      <div id="result" class="output" role="region" aria-label="이모지가 삽입된 결과" aria-live="polite"></div>
+      <div class="stats">
+        <span>원문 글자 수: <strong id="sourceCount">0</strong></span>
+        <span>삽입된 이모지: <strong id="emojiCount">0</strong></span>
+        <span>사용 가능한 이모지: <strong>1,241</strong>종</span>
+      </div>
+      <p id="copyStatus" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <footer>
+      이 페이지는 브라우저 안에서만 작동하며 입력한 텍스트를 외부로 전송하지 않습니다.
+      이모지 모양은 기기와 운영체제에 따라 다르게 표시될 수 있습니다.
+    </footer>
+  </main>
+
+  <script>
+    // 중복 제거 및 표시 호환성 필터링을 거친 이모지 목록
+    const EMOJIS = ["😀","😃","😄","😁","😆","😅","🤣","😂","🙂","🙃","🫠","😉","😊","😇","🤩","🥲","😛","😜","🤪","😝","🤑","🤗","🫢","🫣","🤔","🫡","🤐","🤨","😐","😑","😶","🫥","😶‍🌫️","😏","😒","🙄","😬","😮‍💨","🤥","🫨","😌","😔","😪","🤤","😴","😷","🤒","🤕","🤢","🤮","🤧","🥵","🥶","🥴","😵","😵‍💫","🤯","🤠","🥳","🥸","😎","🤓","🧐","😕","🫤","😟","🙁","😮","😯","😲","😳","🥺","🥹","😦","😧","😨","😰","😥","😢","😭","😱","😖","😞","😓","😩","😫","🥱","😤","😡","😠","😈","👿","💀","💩","🤡","👹","👺","👻","👽","👾","🤖","😺","😸","😹","😼","🙀","😿","😾","🙈","🙉","🙊","💯","💢","💥","💫","💦","💨","💬","👁️‍🗨️","💭","💤","👋","🤚","✋","🫱","🫲","🫳","🫴","🫷","🫸","👌","🤌","🤏","🤞","🫰","🤟","🤘","🤙","👈","👉","👆","🖕","👇","🫵","👍","👎","✊","👊","🤛","🤜","👏","🙌","👐","🤲","🤝","🙏","💅","🤳","💪","🦾","🦿","🦵","🦶","👂","👃","🧠","🫀","🫁","🦷","🦴","👀","👅","👄","🫦","👶","🧒","👦","👧","🧑","👱","👨","🧔","🧔‍♂️","🧔‍♀️","👨‍🦰","👨‍🦱","👨‍🦳","👨‍🦲","👩","👩‍🦰","🧑‍🦰","👩‍🦱","🧑‍🦱","👩‍🦳","🧑‍🦳","👩‍🦲","🧑‍🦲","👱‍♀️","👱‍♂️","🧓","👴","👵","🙍","🙍‍♂️","🙍‍♀️","🙎","🙎‍♂️","🙎‍♀️","🙅","🙅‍♂️","🙅‍♀️","🙆","🙆‍♂️","🙆‍♀️","💁","💁‍♂️","💁‍♀️","🙋","🙋‍♂️","🙋‍♀️","🧏","🧏‍♂️","🧏‍♀️","🙇","🙇‍♂️","🙇‍♀️","🤦","🤦‍♂️","🤦‍♀️","🤷","🤷‍♂️","🤷‍♀️","🧑‍⚕️","👨‍⚕️","👩‍⚕️","🧑‍🎓","👨‍🎓","👩‍🎓","🧑‍🏫","👨‍🏫","👩‍🏫","🧑‍⚖️","👨‍⚖️","👩‍⚖️","🧑‍🌾","👨‍🌾","👩‍🌾","🧑‍🍳","👨‍🍳","👩‍🍳","🧑‍🔧","👨‍🔧","👩‍🔧","🧑‍🏭","👨‍🏭","👩‍🏭","🧑‍💼","👨‍💼","👩‍💼","🧑‍🔬","👨‍🔬","👩‍🔬","🧑‍💻","👨‍💻","👩‍💻","🧑‍🎤","👨‍🎤","👩‍🎤","🧑‍🎨","👨‍🎨","👩‍🎨","🧑‍✈️","👨‍✈️","👩‍✈️","🧑‍🚀","👨‍🚀","👩‍🚀","🧑‍🚒","👨‍🚒","👩‍🚒","👮","👮‍♂️","👮‍♀️","🕵️‍♂️","🕵️‍♀️","💂","💂‍♂️","💂‍♀️","🥷","👷","👷‍♂️","👷‍♀️","🫅","🤴","👸","👳","👳‍♂️","👳‍♀️","👲","🧕","🤵","🤵‍♂️","🤵‍♀️","👰","👰‍♂️","👰‍♀️","🤰","🫃","🫄","🤱","👩‍🍼","👨‍🍼","🧑‍🍼","👼","🎅","🤶","🧑‍🎄","🦸","🦸‍♂️","🦸‍♀️","🦹","🦹‍♂️","🦹‍♀️","🧙","🧙‍♂️","🧙‍♀️","🧚","🧚‍♂️","🧚‍♀️","🧛","🧛‍♂️","🧛‍♀️","🧜","🧜‍♂️","🧜‍♀️","🧝","🧝‍♂️","🧝‍♀️","🧞","🧞‍♂️","🧞‍♀️","🧟","🧟‍♂️","🧟‍♀️","🧌","💆","💆‍♂️","💆‍♀️","💇","💇‍♂️","💇‍♀️","🚶","🚶‍♂️","🚶‍♀️","🧍","🧍‍♂️","🧍‍♀️","🧎","🧎‍♂️","🧎‍♀️","🧑‍🦯","👨‍🦯","👩‍🦯","🧑‍🦼","👨‍🦼","👩‍🦼","🧑‍🦽","👨‍🦽","👩‍🦽","🏃","🏃‍♂️","🏃‍♀️","🧑‍🩰","💃","🕺","👯","👯‍♂️","👯‍♀️","🧖","🧖‍♂️","🧖‍♀️","🧗","🧗‍♂️","🧗‍♀️","🤺","🏇","🏂","🏌️‍♂️","🏌️‍♀️","🏄","🏄‍♂️","🏄‍♀️","🚣","🚣‍♂️","🚣‍♀️","🏊","🏊‍♂️","🏊‍♀️","⛹️‍♂️","⛹️‍♀️","🏋️‍♂️","🏋️‍♀️","🚴","🚴‍♂️","🚴‍♀️","🚵","🚵‍♂️","🚵‍♀️","🤸","🤸‍♂️","🤸‍♀️","🤼","🤼‍♂️","🤼‍♀️","🤽","🤽‍♂️","🤽‍♀️","🤾","🤾‍♂️","🤾‍♀️","🤹","🤹‍♂️","🤹‍♀️","🧘","🧘‍♂️","🧘‍♀️","🛀","🛌","🧑‍🤝‍🧑","👭","👫","👬","👨‍👩‍👦","👨‍👩‍👧","👨‍👩‍👧‍👦","👨‍👩‍👦‍👦","👨‍👩‍👧‍👧","👨‍👨‍👦","👨‍👨‍👧","👨‍👨‍👧‍👦","👨‍👨‍👦‍👦","👨‍👨‍👧‍👧","👩‍👩‍👦","👩‍👩‍👧","👩‍👩‍👧‍👦","👩‍👩‍👦‍👦","👩‍👩‍👧‍👧","👨‍👦","👨‍👦‍👦","👨‍👧","👨‍👧‍👦","👨‍👧‍👧","👩‍👦","👩‍👦‍👦","👩‍👧","👩‍👧‍👦","👩‍👧‍👧","👤","👥","🫂","👪","🧑‍🧑‍🧒","🧑‍🧑‍🧒‍🧒","🧑‍🧒","🧑‍🧒‍🧒","👣","🦰","🦱","🦳","🦲","🐵","🐒","🦍","🦧","🐶","🐕","🦮","🐕‍🦺","🐩","🐺","🦊","🦝","🐱","🐈","🦁","🐯","🐅","🐆","🐴","🫎","🫏","🐎","🦄","🦓","🦌","🦬","🐮","🐂","🐃","🐄","🐷","🐖","🐗","🐽","🐏","🐑","🐐","🐪","🐫","🦙","🦒","🐘","🦣","🦏","🦛","🐭","🐁","🐀","🐹","🐰","🐇","🦫","🦔","🦇","🐻","🐻‍❄️","🐨","🐼","🦥","🦦","🦨","🦘","🦡","🐾","🦃","🐔","🐓","🐣","🐤","🐥","🐦","🐧","🦅","🦆","🦢","🦉","🦤","🪶","🦩","🦚","🦜","🪽","🪿","🐦‍🔥","🐸","🐊","🐢","🦎","🐍","🐲","🐉","🦕","🦖","🐳","🐋","🐬","🦭","🐟","🐠","🐡","🦈","🐙","🐚","🪸","🪼","🦀","🦞","🦐","🦑","🦪","🐌","🦋","🐛","🐜","🐝","🪲","🐞","🦗","🪳","🦂","🦟","🪰","🪱","🦠","💐","🌸","💮","🪷","🌹","🥀","🌺","🌻","🌼","🌷","🪻","🌱","🪴","🌲","🌳","🌴","🌵","🌾","🌿","🍀","🍁","🍂","🪹","🪺","🍄","🍇","🍈","🍉","🍊","🍋","🍌","🍍","🥭","🍎","🍏","🍐","🍑","🍒","🍓","🫐","🥝","🍅","🫒","🥥","🥑","🍆","🥔","🥕","🌽","🫑","🥒","🥬","🥦","🧄","🧅","🥜","🫘","🌰","🫚","🫛","🍞","🥐","🥖","🫓","🥨","🥯","🥞","🧇","🧀","🍖","🍗","🥩","🥓","🍔","🍟","🍕","🌭","🥪","🌮","🌯","🫔","🥙","🧆","🥚","🍳","🥘","🍲","🫕","🥣","🥗","🍿","🧈","🧂","🥫","🍱","🍘","🍙","🍚","🍛","🍜","🍝","🍠","🍢","🍣","🍤","🍥","🥮","🍡","🥟","🥠","🥡","🍦","🍧","🍨","🍩","🍪","🎂","🍰","🧁","🥧","🍫","🍬","🍭","🍮","🍯","🍼","🥛","☕","🫖","🍵","🍶","🍾","🍷","🍸","🍹","🍺","🍻","🥂","🥃","🥤","🧋","🧃","🧉","🧊","🥢","🍴","🥄","🔪","🫙","🏺","🌍","🌎","🌏","🌐","🗾","🧭","🌋","🗻","🧱","🪨","🪵","🛖","🏠","🏡","🏢","🏣","🏤","🏥","🏦","🏨","🏩","🏪","🏫","🏬","🏭","🏯","🏰","💒","🗼","🗽","⛪","🕌","🛕","🕍","🕋","⛲","⛺","🌁","🌃","🌄","🌅","🌆","🌇","🌉","🎠","🛝","🎡","🎢","💈","🎪","🚂","🚃","🚄","🚅","🚆","🚇","🚈","🚉","🚊","🚝","🚞","🚋","🚌","🚍","🚎","🚐","🚑","🚒","🚓","🚔","🚕","🚖","🚗","🚘","🚙","🛻","🚚","🚛","🚜","🛵","🦽","🦼","🛺","🚲","🛴","🛹","🛼","🚏","⛽","🛞","🚨","🚥","🚦","🛑","🚧","⚓","⛵","🛶","🚤","🚢","🛫","🛬","🪂","💺","🚁","🚟","🚠","🚡","🚀","🛸","🧳","⌛","⏳","⌚","⏰","🕛","🕧","🕐","🕜","🕑","🕝","🕒","🕞","🕓","🕟","🕔","🕠","🕕","🕡","🕖","🕢","🕗","🕣","🕘","🕤","🕙","🕥","🕚","🕦","🌑","🌒","🌓","🌔","🌕","🌖","🌗","🌘","🌙","🌚","🌛","🌜","🌝","🌞","⭐","🌟","🌠","🌌","⛅","🌀","🌈","🌂","☔","⚡","⛄","🔥","💧","🌊","🎃","🎄","🎆","🎇","🧨","✨","🎈","🎉","🎊","🎋","🎍","🎎","🎏","🎐","🎑","🧧","🎀","🎁","🎫","🏆","🏅","🥇","🥈","🥉","⚽","⚾","🥎","🏀","🏐","🏈","🏉","🎾","🥏","🎳","🏏","🏑","🏒","🥍","🏓","🏸","🥊","🥋","🥅","⛳","🎣","🤿","🎽","🎿","🛷","🥌","🎯","🪀","🪁","🔫","🎱","🔮","🪄","🎮","🎰","🎲","🧩","🧸","🪅","🪩","🪆","🃏","🀄","🎴","🎭","🎨","🧵","🪡","🧶","🪢","👓","🥽","🥼","🦺","👔","👕","👖","🧣","🧤","🧥","🧦","👗","👘","🥻","🩱","🩲","🩳","👙","👚","🪭","👛","👜","👝","🎒","🩴","👞","👟","🥾","🥿","👠","👡","🩰","👢","🪮","👑","👒","🎩","🎓","🧢","🪖","📿","💄","💎","🔇","🔈","🔉","🔊","📢","📯","🔔","🔕","🎼","🎵","🎶","🎤","🎧","📻","🎷","🎺","🪗","🎸","🎹","🎻","🪕","🥁","🪘","🪇","🪈","📱","📞","📟","📠","🔋","🪫","🔌","💻","💽","💾","💿","📀","🧮","🎥","🎬","📺","📷","📸","📹","📼","🔍","🔎","💡","🔦","🏮","🪔","📔","📕","📖","📗","📘","📙","📚","📓","📒","📃","📜","📄","📰","📑","🔖","🪙","💰","💴","💵","💶","💷","💸","💳","🧾","💹","📧","📨","📤","📥","📦","📫","📪","📬","📭","📮","📝","💼","📁","📂","📅","📆","📇","📈","📉","📊","📋","📌","📍","📎","📏","📐","🔒","🔓","🔏","🔐","🔑","🔨","🪓","💣","🪃","🪚","🔧","🪛","🔩","🦯","🔗","⛓️‍💥","🪝","🧰","🧲","🪜","🧪","🧫","🧬","🔬","🔭","📡","🩸","💊","🩹","🩼","🩺","🩻","🚪","🛗","🪞","🪟","🪑","🚽","🪠","🚿","🛁","🪤","🪒","🧴","🧷","🧹","🧺","🧻","🪣","🧼","🫧","🪥","🧽","🧯","🛒","🚬","🪦","🧿","🪬","🗿","🪧","🪪","🏧","🚮","🚰","♿","🚹","🚺","🚻","🚼","🚾","🛂","🛃","🛄","🛅","🚸","⛔","🚫","🚳","🚭","🚯","🚱","🚷","📵","🔞","🛐","🕎","🔯","🪯","⛎","🎦","🔅","🔆","📶","🛜","📳","📴","🟰","💱","💲","🔱","📛","🔰","➰","➿","🔢","🔣","🏁","🚩","🎌","🏴","🏳️‍🌈","🏳️‍⚧️","🏴‍☠️"];
+
+    const sourceText = document.getElementById("sourceText");
+    const minChunkInput = document.getElementById("minChunk");
+    const maxChunkInput = document.getElementById("maxChunk");
+    const maxBurstInput = document.getElementById("maxBurst");
+    const result = document.getElementById("result");
+    const sourceCount = document.getElementById("sourceCount");
+    const emojiCount = document.getElementById("emojiCount");
+    const inputStatus = document.getElementById("inputStatus");
+    const copyStatus = document.getElementById("copyStatus");
+
+    let lastResult = "";
+    let lastEmojiCount = 0;
+
+    // 복합 이모지와 한글 결합 문자를 가능한 한 하나의 글자로 취급
+    function splitGraphemes(text) {
+      if (typeof Intl !== "undefined" && Intl.Segmenter) {
+        const segmenter = new Intl.Segmenter("ko", { granularity: "grapheme" });
+        return Array.from(segmenter.segment(text), item => item.segment);
+      }
+      return Array.from(text);
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function pickEmoji() {
+      return EMOJIS[randomInt(0, EMOJIS.length - 1)];
+    }
+
+    function readSettings() {
+      const min = Number.parseInt(minChunkInput.value, 10);
+      const max = Number.parseInt(maxChunkInput.value, 10);
+      const burst = Number.parseInt(maxBurstInput.value, 10);
+
+      if (!Number.isInteger(min) || !Number.isInteger(max) || !Number.isInteger(burst)) {
+        throw new Error("설정값을 숫자로 입력해 주세요.");
+      }
+      if (min < 1 || max < min || max > 100) {
+        throw new Error("분할 글자 수는 1~100 범위이며, 최소값은 최대값보다 클 수 없습니다.");
+      }
+      if (burst < 1 || burst > 10) {
+        throw new Error("구간당 최대 이모지 수는 1~10으로 설정해 주세요.");
+      }
+      return { min, max, burst };
+    }
+
+    function transform(text) {
+      const chars = splitGraphemes(text);
+      const { min, max, burst } = readSettings();
+      const parts = [];
+      let inserted = 0;
+      let index = 0;
+
+      while (index < chars.length) {
+        const chunkLength = randomInt(min, max);
+        const chunk = chars.slice(index, index + chunkLength);
+        parts.push(chunk.join(""));
+        index += chunk.length;
+
+        // 마지막 텍스트 구간 뒤에는 이모지를 붙이지 않음
+        if (index < chars.length) {
+          const emojiAmount = randomInt(1, burst);
+          for (let i = 0; i < emojiAmount; i++) {
+            parts.push(pickEmoji());
+            inserted++;
+          }
+        }
+      }
+
+      return { text: parts.join(""), inserted };
+    }
+
+    function generate() {
+      inputStatus.textContent = "";
+      copyStatus.textContent = "";
+
+      const original = sourceText.value;
+      if (!original.length) {
+        inputStatus.textContent = "먼저 원본 텍스트를 입력해 주세요.";
+        return;
+      }
+
+      try {
+        const converted = transform(original);
+        lastResult = converted.text;
+        lastEmojiCount = converted.inserted;
+        result.textContent = lastResult;
+        sourceCount.textContent = splitGraphemes(original).length.toLocaleString("ko-KR");
+        emojiCount.textContent = lastEmojiCount.toLocaleString("ko-KR");
+      } catch (error) {
+        inputStatus.textContent = error.message;
+      }
+    }
+
+    async function copyResult() {
+      copyStatus.textContent = "";
+      if (!lastResult) {
+        copyStatus.textContent = "먼저 텍스트를 변환해 주세요.";
+        return;
+      }
+
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(lastResult);
+        } else {
+          const temporary = document.createElement("textarea");
+          temporary.value = lastResult;
+          temporary.style.position = "fixed";
+          temporary.style.opacity = "0";
+          document.body.appendChild(temporary);
+          temporary.select();
+          const copied = document.execCommand("copy");
+          temporary.remove();
+          if (!copied) throw new Error("복사 명령이 거부되었습니다.");
+        }
+        copyStatus.textContent = "결과를 클립보드에 복사했습니다.";
+      } catch (error) {
+        copyStatus.textContent = "복사에 실패했습니다. 결과를 직접 선택해 복사해 주세요.";
+      }
+    }
+
+    function clearAll() {
+      sourceText.value = "";
+      result.textContent = "";
+      lastResult = "";
+      lastEmojiCount = 0;
+      sourceCount.textContent = "0";
+      emojiCount.textContent = "0";
+      inputStatus.textContent = "";
+      copyStatus.textContent = "";
+      sourceText.focus();
+    }
+
+    // 목록이 비었거나 중복된 항목이 있으면 실행을 중단해 잘못된 상태를 방지
+    if (!Array.isArray(EMOJIS) || EMOJIS.length === 0 ||
+        new Set(EMOJIS).size !== EMOJIS.length) {
+      throw new Error("이모지 목록을 확인해 주세요. 목록이 비었거나 중복 항목이 있습니다.");
+    }
+
+    document.getElementById("generateBtn").addEventListener("click", generate);
+    document.getElementById("remixBtn").addEventListener("click", () => {
+      if (!sourceText.value) {
+        inputStatus.textContent = "먼저 원본 텍스트를 입력해 주세요.";
+        return;
+      }
+      generate();
+    });
+    document.getElementById("clearBtn").addEventListener("click", clearAll);
+    document.getElementById("copyBtn").addEventListener("click", copyResult);
+  </script>
+</body>
+</html>
